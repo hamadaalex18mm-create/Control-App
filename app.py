@@ -199,4 +199,5 @@ if st.session_state.base_df is not None:
                     data=output.getvalue(),
                     file_name="توزيع_كراسات_الإجابة.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    type="primary
+                    type="primary"
+                )
