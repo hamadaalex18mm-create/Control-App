@@ -39,13 +39,15 @@ st.markdown(
 # --- الهيدر (الشعارات والعنوان) ---
 col_left, col_space, col_right = st.columns([1, 3, 1])
 with col_left:
-    if os.path.exists("logo_unit.png"): st.image("logo_unit.png", use_container_width=True)
-    elif os.path.exists("logo_unit.jpg"): st.image("logo_unit.jpg", use_container_width=True)
+    # تم تبديل الشعار هنا (شعار الكلية عشان يظهر على اليمين بسبب الـ RTL)
+    if os.path.exists("logo_faculty.png"): st.image("logo_faculty.png", use_container_width=True)
+    elif os.path.exists("logo_faculty.jpg"): st.image("logo_faculty.jpg", use_container_width=True)
 with col_space:
     st.markdown("<div style='display: flex; justify-content: center; align-items: center; height: 100%; margin-top: 20px;'><h1 style='margin: 0;'>توزيع كراسات الإجابة (الشجرة)</h1></div>", unsafe_allow_html=True)
 with col_right:
-    if os.path.exists("logo_faculty.png"): st.image("logo_faculty.png", use_container_width=True)
-    elif os.path.exists("logo_faculty.jpg"): st.image("logo_faculty.jpg", use_container_width=True)
+    # تم تبديل الشعار هنا (شعار الوحدة عشان يظهر على الشمال)
+    if os.path.exists("logo_unit.png"): st.image("logo_unit.png", use_container_width=True)
+    elif os.path.exists("logo_unit.jpg"): st.image("logo_unit.jpg", use_container_width=True)
 
 st.markdown("---")
 
@@ -97,8 +99,7 @@ if st.session_state.base_df is not None:
         with st.spinner('جاري الحساب...'):
             letters = ARABIC_LETTERS if lang == "عربي" else ENGLISH_LETTERS
             tree_results = []
-            curr_let_idx, curr_paper = 1, 1 # Start paper from 1
-            curr_let_idx = 0
+            curr_let_idx, curr_paper = 0, 1
             
             for _, row in edited_df.iterrows():
                 try: attendance = int(row['عدد الحضور'])
@@ -115,7 +116,6 @@ if st.session_state.base_df is not None:
                     take = min(rem, avail)
                     end = curr_paper + take - 1
                     
-                    # تم التعديل هنا: الترتيب (البداية - النهاية) للغتين عشان يطلع زي الصورة
                     text = f"{let} {curr_paper}-{end}"
                     comm_tree.append(text)
                     
