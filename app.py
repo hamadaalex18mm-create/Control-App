@@ -11,17 +11,27 @@ st.markdown(
     """
     <style>
     /* محاذاة كل النصوص لليمين */
-    .stMarkdown, .stText, p, label { text-align: right !important; direction: rtl !important; }
+    .stMarkdown, .stText, p { text-align: right !important; direction: rtl !important; }
     
-    /* ضبط الراديو بوتون ليكون على اليمين تماماً */
-    .stRadio { direction: rtl !important; }
-    div[role="radiogroup"] { align-items: flex-start !important; width: 100%; }
+    /* 1. إجبار اختيارات اللغة (الراديو بوتون) لتكون أقصى اليمين */
+    .stRadio > label {
+        display: flex !important;
+        justify-content: flex-end !important;
+        width: 100% !important;
+        direction: rtl !important;
+    }
+    div[role="radiogroup"] { 
+        direction: rtl !important;
+        display: flex !important;
+        justify-content: flex-start !important; /* RTL direction makes flex-start go right */
+        width: 100% !important;
+    }
     
-    /* إجبار الأزرار العادية (مثل زر رفع ملف) على التوجه لليمين */
-    .stButton > button {
-        margin-left: auto !important;
-        margin-right: 0 !important;
-        display: block !important;
+    /* 2. إجبار الأزرار العادية (مثل رفع ملف جديد) لتكون أقصى اليمين */
+    .stButton {
+        display: flex !important;
+        justify-content: flex-end !important;
+        width: 100% !important;
     }
     
     /* ضبط الخلايا داخل الجداول لتكون نصوصها يمين */
@@ -112,7 +122,7 @@ if st.session_state.base_df is not None:
     col_data, col_settings = st.columns([4, 1])
     
     with col_settings:
-        st.markdown("<h3 dir='rtl' style='text-align: right;'>الإعدادات</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 dir='rtl' style='text-align: right; width: 100%;'>الإعدادات</h3>", unsafe_allow_html=True)
         lang = st.radio("اختر لغة الشجرة:", ["عربي", "إنجليزي"])
         st.markdown("---")
         if st.button("رفع ملف جديد"):
@@ -136,9 +146,7 @@ if st.session_state.base_df is not None:
             height=input_table_height
         )
         
-        st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
         calc_button = st.button("حساب الشجرة وتوليد النتيجة", type="primary")
-        st.markdown("</div>", unsafe_allow_html=True)
 
         if calc_button:
             with st.spinner('جاري الحساب...'):
@@ -159,32 +167,3 @@ if st.session_state.base_df is not None:
                     committee_tree = []
                     while remaining > 0:
                         if current_letter_idx >= len(letters): break
-                        available_in_current = 101 - current_paper
-                        letter = letters[current_letter_idx]
-                        if remaining <= available_in_current:
-                            end_paper = current_paper + remaining - 1
-                            if lang == "عربي":
-                                committee_tree.append(f"{letter} {end_paper}-{current_paper}")
-                            else:
-                                committee_tree.append(f"{letter} {current_paper}-{end_paper}")
-                            current_paper = end_paper + 1
-                            remaining = 0
-                            if current_paper > 100:
-                                current_letter_idx += 1
-                                current_paper = 1
-                        else:
-                            if lang == "عربي":
-                                committee_tree.append(f"{letter} 100-{current_paper}")
-                            else:
-                                committee_tree.append(f"{letter} {current_paper}-100")
-                            remaining -= available_in_current
-                            current_letter_idx += 1
-                            current_paper = 1
-                    tree_results.append(", ".join(committee_tree))
-                
-                result_df = edited_df.copy()
-                col_name = 'الشجرة (عربي)' if lang == "عربي" else 'الشجرة (انجليزي)'
-                result_df[col_name] = tree_results
-                
-                total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
-                total_row = pd.DataFrame({'رقم اللجنة': ['الإجمالي'], 'مكان اللجنة': [''], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
