@@ -77,7 +77,6 @@ if st.session_state.base_df is not None:
     c1, c2 = st.columns(2)
     with c1:
         control_name = st.text_input("الكنترول:")
-        # تم إرجاع اختيار التاريخ بدلاً من النص
         exam_date = st.date_input("تاريخ الامتحان:")
     with c2:
         course_name = st.text_input("المقرر:")
@@ -85,7 +84,6 @@ if st.session_state.base_df is not None:
         
     st.markdown("<h3>أعداد الحضور</h3>", unsafe_allow_html=True)
     
-    # ترتيب أعمدة الإدخال
     input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
     edited_df = st.data_editor(
         st.session_state.base_df[input_display_cols],
@@ -99,7 +97,8 @@ if st.session_state.base_df is not None:
         with st.spinner('جاري الحساب...'):
             letters = ARABIC_LETTERS if lang == "عربي" else ENGLISH_LETTERS
             tree_results = []
-            curr_let_idx, curr_paper = 0, 1
+            curr_let_idx, curr_paper = 1, 1 # Start paper from 1
+            curr_let_idx = 0
             
             for _, row in edited_df.iterrows():
                 try: attendance = int(row['عدد الحضور'])
@@ -116,7 +115,8 @@ if st.session_state.base_df is not None:
                     take = min(rem, avail)
                     end = curr_paper + take - 1
                     
-                    text = f"{let} {end}-{curr_paper}" if lang == "عربي" else f"{let} {curr_paper}-{end}"
+                    # تم التعديل هنا: الترتيب (البداية - النهاية) للغتين عشان يطلع زي الصورة
+                    text = f"{let} {curr_paper}-{end}"
                     comm_tree.append(text)
                     
                     rem -= take
@@ -133,20 +133,17 @@ if st.session_state.base_df is not None:
             total_row = pd.DataFrame({'رقم اللجنة': [''], 'مكان اللجنة': ['الإجمالي'], 'عدد الحضور': [int(total_attendance)], col_tree: ['']})
             result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
             
-            # --- تم تعديل ترتيب أعمدة المخرجات لتعود لليمين بشكل سليم ---
             display_cols = [col_tree, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
             result_df_display = result_df_with_total[display_cols]
             
             st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-size: 18px; font-weight: bold; margin-bottom: 15px;'>✅ تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
             
-            # عرض الجدول في الموقع بعد التعديل لليمين
             styled_output = result_df_display.style.set_properties(**{'text-align': 'right'}).set_table_styles([dict(selector='th', props=[('text-align', 'right')])])
             st.dataframe(styled_output, hide_index=True, use_container_width=True, height=(len(result_df_display) + 1) * 38)
             
-            # --- إنشاء ملف الإكسيل المنسق ---
+            # --- إنشاء ملف الإكسيل ---
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                # ترتيب الإكسيل الفعلي (من اليمين لليسار)
                 excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_tree]
                 result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة', startrow=4)
                 
@@ -163,7 +160,6 @@ if st.session_state.base_df is not None:
                 yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
                 grey_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
                 
-                # تحويل التاريخ لنص منسق لو تم اختياره
                 formatted_date = exam_date.strftime("%Y-%m-%d") if exam_date else ""
                 
                 meta_data = [("الكنترول", control_name), ("المقرر", course_name), ("التاريخ", formatted_date)]
