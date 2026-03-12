@@ -6,51 +6,24 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="برنامج توزيع كراسات الإجابة", layout="wide")
 
-# كود CSS لاختراق عناصر Streamlit وإجبارها على اليمين
+# كود CSS أساسي ومستقر لضبط الجداول والنصوص
 st.markdown(
     """
     <style>
     /* محاذاة النصوص العادية لليمين */
     .stMarkdown, .stText, p { text-align: right !important; direction: rtl !important; }
     
-    /* 1. إجبار اختيارات اللغة (الراديو بوتون) لليمين تماماً */
-    div[data-testid="stRadio"] {
-        direction: rtl !important;
-        text-align: right !important;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start; /* بيعكس مكانه لليمين بسبب الـ RTL */
-    }
-    div[data-testid="stRadio"] > label {
-        width: 100% !important;
-        text-align: right !important;
-    }
-    div[role="radiogroup"] { 
-        direction: rtl !important;
-        width: 100% !important;
-    }
-    
-    /* 2. إجبار زرار (رفع ملف جديد) لليمين */
-    div[data-testid="stButton"] {
-        display: flex !important;
-        justify-content: flex-end !important;
-        width: 100% !important;
-    }
-    div[data-testid="stButton"] > button {
-        direction: rtl !important;
-    }
-    
-    /* 3. ضبط الخلايا داخل الجداول لتكون نصوصها يمين */
+    /* ضبط الخلايا داخل الجداول لتكون نصوصها يمين */
     [data-testid="stDataFrame"] div[role="gridcell"], 
     [data-testid="stDataFrame"] div[role="columnheader"] {
         text-align: right !important;
         justify-content: flex-end !important;
     }
     
-    /* 4. زرار التحميل */
+    /* زرار التحميل */
     .stDownloadButton { display: flex; justify-content: flex-end; }
 
-    /* 5. حماية العنوان الرئيسي ليبقى في المنتصف */
+    /* حماية العنوان الرئيسي ليبقى في المنتصف */
     h1 {
         text-align: center !important;
         width: 100% !important;
@@ -62,7 +35,6 @@ st.markdown(
 )
 
 # --- تنسيق الهيدر (الشعارات والعنوان) ---
-# تقسيم الشاشة لـ 3 أجزاء
 col_left, col_space, col_right = st.columns([1, 3, 1])
 
 with col_right:
@@ -152,7 +124,9 @@ if st.session_state.base_df is not None:
             height=input_table_height
         )
         
+        st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
         calc_button = st.button("حساب الشجرة وتوليد النتيجة", type="primary")
+        st.markdown("</div>", unsafe_allow_html=True)
 
         if calc_button:
             with st.spinner('جاري الحساب...'):
