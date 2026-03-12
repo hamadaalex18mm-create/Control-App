@@ -39,13 +39,11 @@ st.markdown(
 # --- الهيدر (الشعارات والعنوان) ---
 col_left, col_space, col_right = st.columns([1, 3, 1])
 with col_left:
-    # تم تبديل الشعار هنا (شعار الكلية عشان يظهر على اليمين بسبب الـ RTL)
     if os.path.exists("logo_faculty.png"): st.image("logo_faculty.png", use_container_width=True)
     elif os.path.exists("logo_faculty.jpg"): st.image("logo_faculty.jpg", use_container_width=True)
 with col_space:
     st.markdown("<div style='display: flex; justify-content: center; align-items: center; height: 100%; margin-top: 20px;'><h1 style='margin: 0;'>توزيع كراسات الإجابة (الشجرة)</h1></div>", unsafe_allow_html=True)
 with col_right:
-    # تم تبديل الشعار هنا (شعار الوحدة عشان يظهر على الشمال)
     if os.path.exists("logo_unit.png"): st.image("logo_unit.png", use_container_width=True)
     elif os.path.exists("logo_unit.jpg"): st.image("logo_unit.jpg", use_container_width=True)
 
@@ -106,7 +104,8 @@ if st.session_state.base_df is not None:
                 except: attendance = 0
                 
                 if attendance <= 0:
-                    tree_results.append(""); continue
+                    tree_results.append("")
+                    continue
                 
                 rem = attendance
                 comm_tree = []
@@ -123,7 +122,9 @@ if st.session_state.base_df is not None:
                     curr_paper = end + 1
                     if curr_paper > 100:
                         curr_let_idx += 1; curr_paper = 1
-                tree_results.append(", ".join(comm_tree))
+                
+                # التعديل هنا: تم تغيير الفاصلة (,) إلى العلامة (&)
+                tree_results.append(" & ".join(comm_tree))
 
             result_df = edited_df.copy()
             col_tree = 'الشجرة (عربي)' if lang == "عربي" else 'الشجرة (انجليزي)'
