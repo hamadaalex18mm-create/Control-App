@@ -6,38 +6,44 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="توزيع كراسات الإجابة", layout="wide")
 
-# كود CSS مبسط جداً لضبط النصوص بدون تخريب ترتيب الصفحة
+# ==========================================
+# كود CSS "محدد جداً" لضبط المطلوب فقط بدون شقلبة الصفحة
+# ==========================================
 st.markdown(
     """
     <style>
-    /* محاذاة النصوص العادية لليمين */
-    .stMarkdown, .stText, p, label { text-align: right !important; direction: rtl !important; }
+    /* 1. محاذاة النصوص العادية لليمين وتوسيط العنوان */
+    .stMarkdown, .stText, p, h3 { text-align: right !important; direction: rtl !important; }
+    h1 { text-align: center !important; width: 100% !important; direction: rtl !important; }
     
-    /* توسيط العنوان الرئيسي */
-    h1 {
-        text-align: center !important;
-        width: 100% !important;
-        direction: rtl !important;
+    /* 2. ضبط الراديو بوتون (عربي/إنجليزي) لتكون الدائرة على اليمين */
+    div[role="radiogroup"] { direction: rtl; }
+    div[role="radiogroup"] > label {
+        direction: rtl;
+        justify-content: flex-start !important;
     }
     
-    /* محاذاة البيانات داخل الجداول لليمين */
-    [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th {
+    /* 3. إجبار الأزرار على التواجد في يمين الحاوية الخاصة بها */
+    div[data-testid="stButton"] { display: flex; justify-content: flex-end; }
+    div[data-testid="stDownloadButton"] { display: flex; justify-content: flex-end; }
+    
+    /* 4. محاذاة البيانات داخل الجداول لليمين */
+    [data-testid="stDataFrame"] div[role="gridcell"], 
+    [data-testid="stDataFrame"] div[role="columnheader"] {
         text-align: right !important;
-        direction: rtl !important;
+        justify-content: flex-end !important;
     }
-
-    /* زرار التحميل */
-    .stDownloadButton { display: flex; justify-content: flex-end; }
     </style>
     """,
     unsafe_allow_html=True
 )
+# ==========================================
 
 # --- تنسيق الهيدر (الشعارات والعنوان) ---
 col_left, col_space, col_right = st.columns([1, 3, 1])
 
 with col_left:
-    # 1. شعار الوحدة (أعلى اليسار)
+    # شعار الوحدة (أعلى اليسار)
     if os.path.exists("logo_unit.jpg"):
         st.image("logo_unit.jpg", use_container_width=True)
     elif os.path.exists("logo_unit.png"):
@@ -55,7 +61,7 @@ with col_space:
     )
 
 with col_right:
-    # 2. شعار الكلية (أعلى اليمين)
+    # شعار الكلية (أعلى اليمين)
     if os.path.exists("logo_faculty.jpg"):
         st.image("logo_faculty.jpg", use_container_width=True)
     elif os.path.exists("logo_faculty.png"):
@@ -63,7 +69,7 @@ with col_right:
 
 st.markdown("---")
 
-# --- الحروف الأبجدية (مؤمنة ضد أخطاء النسخ) ---
+# --- الحروف الأبجدية (مؤمنة) ---
 ARABIC_LETTERS = "أ ب ج د هـ و ز ح ط ي ك ل م ن س ع ف ص ق ر ش ت ث خ ذ ض ظ غ".split(" ")
 ENGLISH_LETTERS = "A B C D E F G H I J K L M N O P Q R S T U V W X Y Z".split(" ")
 
@@ -96,20 +102,21 @@ if st.session_state.base_df is None:
 
 # --- مرحلة واجهة العمل ---
 if st.session_state.base_df is not None:
-    col_data, col_settings = st.columns([4, 1])
+    # الترتيب الأساسي: الإعدادات شمال (1) والجدول يمين (4)
+    col_settings, col_data = st.columns([1, 4])
     
     with col_settings:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>الإعدادات</h3>", unsafe_allow_html=True)
         lang = st.radio("اختر لغة الشجرة:", ["عربي", "إنجليزي"])
         st.markdown("---")
-        if st.button("رفع ملف جديد"):
+        if st.button("تفريغ البيانات لرفع ملف جديد"):
             st.session_state.base_df = None
             st.rerun()
 
     with col_data:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
         
-        # الترتيب السليم لظهور رقم اللجنة في اليمين
+        # ترتيب الجدول الطبيعي
         input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
         df_for_editor = st.session_state.base_df[input_display_cols]
         
@@ -123,9 +130,7 @@ if st.session_state.base_df is not None:
             height=input_table_height
         )
         
-        st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
         calc_button = st.button("حساب الشجرة وتوليد النتيجة", type="primary")
-        st.markdown("</div>", unsafe_allow_html=True)
 
         if calc_button:
             with st.spinner('جاري الحساب...'):
@@ -175,11 +180,11 @@ if st.session_state.base_df is not None:
                 
                 total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
                 
-                # وضع كلمة الإجمالي في عمود مكان اللجنة للحفاظ على أرقام اللجان محاذية لليمين
+                # إضافة صف الإجمالي
                 total_row = pd.DataFrame({'رقم اللجنة': [''], 'مكان اللجنة': ['الإجمالي'], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                # الترتيب السليم لمخرجات النتيجة
+                # ترتيب الأعمدة للمخرجات
                 display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
                 result_df_display = result_df_with_total[display_cols]
                 
@@ -194,7 +199,6 @@ if st.session_state.base_df is not None:
                     result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة')
                     writer.sheets['الشجرة'].sheet_view.rightToLeft = True
                 
-                st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
                 st.download_button(
                     label="📥 تحميل النتيجة في ملف إكسيل",
                     data=output.getvalue(),
@@ -202,9 +206,8 @@ if st.session_state.base_df is not None:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     type="primary"
                 )
-                st.markdown("</div>", unsafe_allow_html=True)
                 
-                # النصيحة تحت زرار التحميل
+                # النصيحة في الأسفل
                 st.markdown(
                     "<p dir='rtl' style='text-align: right; color: gray; margin-top: 10px; font-size: 14px;'>"
                     "💡 نصيحة: للطباعة كـ PDF، قم بفتح ملف الإكسيل الذي تم تحميله، ثم اضغط (Ctrl+P) واختر Save as PDF"
