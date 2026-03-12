@@ -123,7 +123,6 @@ if st.session_state.base_df is not None:
                     if curr_paper > 100:
                         curr_let_idx += 1; curr_paper = 1
                 
-                # التعديل هنا: تم تغيير الفاصلة (,) إلى العلامة (&)
                 tree_results.append(" & ".join(comm_tree))
 
             result_df = edited_df.copy()
@@ -146,7 +145,8 @@ if st.session_state.base_df is not None:
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_tree]
-                result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة', startrow=4)
+                # تم الإزاحة لتبدأ من الصف 6 (بترك مساحة 4 صفوف للبيانات + صف فارغ)
+                result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة', startrow=5)
                 
                 workbook = writer.book
                 worksheet = writer.sheets['الشجرة']
@@ -163,7 +163,14 @@ if st.session_state.base_df is not None:
                 
                 formatted_date = exam_date.strftime("%Y-%m-%d") if exam_date else ""
                 
-                meta_data = [("الكنترول", control_name), ("المقرر", course_name), ("التاريخ", formatted_date)]
+                # إضافة عدد الحضور لبيانات الهيدر
+                meta_data = [
+                    ("الكنترول", control_name), 
+                    ("المقرر", course_name), 
+                    ("التاريخ", formatted_date),
+                    ("عدد الحضور", int(total_attendance))
+                ]
+                
                 for i, (label, val) in enumerate(meta_data, start=1):
                     worksheet[f'A{i}'] = label
                     worksheet[f'B{i}'] = val
@@ -174,16 +181,18 @@ if st.session_state.base_df is not None:
                     worksheet[f'A{i}'].font = Font(bold=True)
                     worksheet[f'B{i}'].font = Font(bold=True)
 
+                # تنسيق الهيدر للجدول (أصبح الآن في الصف 6)
                 for col_num in range(1, 5):
-                    cell = worksheet.cell(row=5, column=col_num)
+                    cell = worksheet.cell(row=6, column=col_num)
                     cell.fill = header_fill
                     cell.font = header_font
                     cell.alignment = center_align
                     cell.border = thin_border
                 
-                worksheet.auto_filter.ref = f"A5:D{worksheet.max_row-1}"
+                worksheet.auto_filter.ref = f"A6:D{worksheet.max_row-1}"
 
-                for r_idx in range(6, worksheet.max_row + 1):
+                # تنسيق البيانات داخل الجدول (تبدأ من الصف 7)
+                for r_idx in range(7, worksheet.max_row + 1):
                     is_total = (r_idx == worksheet.max_row)
                     attendance_val = worksheet.cell(row=r_idx, column=3).value
                     
