@@ -43,7 +43,6 @@ if os.path.exists("logo_faculty.jpg"):
 elif os.path.exists("logo_faculty.png"):
     col_right.image("logo_faculty.png", use_container_width=True)
 
-# تعديل الاسم بناءً على طلبك
 st.markdown(
     """
     <div style='text-align: center; margin-top: -50px; margin-bottom: 30px;'>
@@ -71,7 +70,6 @@ if 'base_df' not in st.session_state:
 
 # --- مرحلة رفع الملف ---
 if st.session_state.base_df is None:
-    # رسالة رفع الملف المخصصة لليمين
     st.markdown(
         "<div dir='rtl' style='text-align: right; background-color: #e8f4f8; padding: 15px; border-radius: 5px; color: #004d40; border: 1px solid #b6e3f4; margin-bottom: 15px; font-size: 16px;'>"
         "ℹ️ <strong>ملاحظة:</strong> يرجى رفع ملف الإكسيل الأساسي (يحتوي على: رقم اللجنة، مكان اللجنة)"
@@ -96,7 +94,6 @@ if st.session_state.base_df is None:
 
 # --- مرحلة واجهة العمل ---
 if st.session_state.base_df is not None:
-    # السر كله هنا: عمود البيانات (4) بقى على الشمال، وعمود الإعدادات (1) بقى على اليمين!
     col_data, col_settings = st.columns([4, 1])
     
     with col_settings:
@@ -109,14 +106,7 @@ if st.session_state.base_df is not None:
 
     with col_data:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
-        st.markdown(
-            "<p dir='rtl' style='text-align: right; color: gray;'>"
-            "نصيحة: للطباعة كـ PDF، قم بتحميل ملف الإكسيل وافتحه، ثم اضغط (Ctrl+P) واختر Save as PDF"
-            "</p>", 
-            unsafe_allow_html=True
-        )
         
-        # الترتيب ده بيخلي رقم اللجنة في أقصى اليمين على الشاشة
         input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
         df_for_editor = st.session_state.base_df[input_display_cols]
         
@@ -180,7 +170,6 @@ if st.session_state.base_df is not None:
                 col_name = 'الشجرة (عربي)' if lang == "عربي" else 'الشجرة (انجليزي)'
                 result_df[col_name] = tree_results
                 
-                # حساب إجمالي الحضور
                 total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
                 
                 total_row = pd.DataFrame({
@@ -192,7 +181,6 @@ if st.session_state.base_df is not None:
                 
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                # ترتيب الأعمدة للعرض على الشاشة (رقم اللجنة أقصى اليمين)
                 display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
                 result_df_display = result_df_with_total[display_cols]
                 
@@ -209,12 +197,11 @@ if st.session_state.base_df is not None:
                 
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    # في الإكسيل الترتيب من اليمين للشمال طبيعي زي ما طلبت
                     excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
                     result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة')
                     writer.sheets['الشجرة'].sheet_view.rightToLeft = True
                 
-                st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
+                # زرار التحميل
                 st.download_button(
                     label="📥 تحميل النتيجة في ملف إكسيل",
                     data=output.getvalue(),
@@ -222,4 +209,11 @@ if st.session_state.base_df is not None:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     type="primary"
                 )
-                st.markdown("</div>", unsafe_allow_html=True)
+                
+                # النصيحة اتنقلت هنا تحت زرار التحميل
+                st.markdown(
+                    "<p dir='rtl' style='text-align: right; color: gray; margin-top: 10px; font-size: 14px;'>"
+                    "💡 نصيحة: للطباعة كـ PDF، قم بفتح ملف الإكسيل الذي تم تحميله، ثم اضغط (Ctrl+P) واختر Save as PDF"
+                    "</p>", 
+                    unsafe_allow_html=True
+                )
