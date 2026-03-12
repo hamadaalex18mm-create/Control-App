@@ -6,62 +6,57 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="برنامج توزيع كراسات الإجابة", layout="wide")
 
-# ==========================================
-# الحل النووي: قلب المنصة بالكامل لتدعم العربية (RTL)
-# ==========================================
+# كود CSS مستقر جداً لضبط النصوص والجداول لليمين وتوسيط العنوان (بدون شقلبة المنصة)
 st.markdown(
     """
     <style>
-    /* شقلبة التطبيق كله ليكون من اليمين لليسار */
-    .stApp {
-        direction: rtl !important;
-    }
+    /* محاذاة النصوص العادية لليمين */
+    .stMarkdown, .stText, p, label { text-align: right !important; direction: rtl !important; }
     
-    /* إجبار كل النصوص والفقرات على محاذاة اليمين */
-    p, div, span, label, h2, h3, h4, h5, h6 {
+    /* ضبط الخلايا داخل الجداول لتكون نصوصها يمين */
+    [data-testid="stDataFrame"] div[role="gridcell"], 
+    [data-testid="stDataFrame"] div[role="columnheader"] {
         text-align: right !important;
+        justify-content: flex-end !important;
     }
     
-    /* استثناء العنوان الرئيسي ليبقى متوسطاً في منتصف الصفحة */
+    /* زرار التحميل يمين */
+    .stDownloadButton { display: flex; justify-content: flex-end; }
+
+    /* توسيط العنوان الرئيسي */
     h1 {
         text-align: center !important;
         width: 100% !important;
-    }
-
-    /* إصلاح اتجاه الجداول */
-    [data-testid="stDataFrame"] {
         direction: rtl !important;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
-# ==========================================
 
 # --- تنسيق الهيدر (الشعارات والعنوان) ---
-# بسبب شقلبة التطبيق، العمود الأول المكتوب في الكود سيظهر على "اليمين" في الشاشة
-col_faculty_logo, col_title, col_unit_logo = st.columns([1, 3, 1])
+col_left, col_space, col_right = st.columns([1, 3, 1])
 
-with col_faculty_logo:
-    # 1. شعار الكلية (سيظهر يميناً)
+with col_right:
+    # 1. شعار الكلية (أعلى اليمين)
     if os.path.exists("logo_faculty.jpg"):
         st.image("logo_faculty.jpg", use_container_width=True)
     elif os.path.exists("logo_faculty.png"):
         st.image("logo_faculty.png", use_container_width=True)
 
-with col_title:
+with col_space:
     # العنوان في النص
     st.markdown(
         """
-        <div style='margin-top: -30px; margin-bottom: 20px;'>
-            <h1 style='color: #1E3A8A; font-family: Arial, sans-serif;'>توزيع كراسات الإجابة (الشجرة)</h1>
+        <div style='display: flex; justify-content: center; align-items: center; height: 100%; margin-top: 20px;'>
+            <h1 style='color: #1E3A8A; font-family: Arial, sans-serif; margin: 0;'>توزيع كراسات الإجابة (الشجرة)</h1>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-with col_unit_logo:
-    # 2. شعار الوحدة (سيظهر يساراً)
+with col_left:
+    # 2. شعار الوحدة (أعلى اليسار)
     if os.path.exists("logo_unit.jpg"):
         st.image("logo_unit.jpg", use_container_width=True)
     elif os.path.exists("logo_unit.png"):
@@ -79,7 +74,7 @@ if 'base_df' not in st.session_state:
 # --- مرحلة رفع الملف ---
 if st.session_state.base_df is None:
     st.markdown(
-        "<div style='background-color: #e8f4f8; padding: 15px; border-radius: 5px; color: #004d40; border: 1px solid #b6e3f4; margin-bottom: 15px; font-size: 16px;'>"
+        "<div dir='rtl' style='text-align: right; background-color: #e8f4f8; padding: 15px; border-radius: 5px; color: #004d40; border: 1px solid #b6e3f4; margin-bottom: 15px; font-size: 16px;'>"
         "ℹ️ <strong>ملاحظة:</strong> يرجى رفع ملف الإكسيل الأساسي (يحتوي على: رقم اللجنة، مكان اللجنة)"
         "</div>", 
         unsafe_allow_html=True
@@ -102,23 +97,21 @@ if st.session_state.base_df is None:
 
 # --- مرحلة واجهة العمل ---
 if st.session_state.base_df is not None:
-    # العمود الأول (col_settings) سيظهر على اليمين، والعمود الثاني (col_data) على اليسار
-    col_settings, col_data = st.columns([1, 4])
+    col_data, col_settings = st.columns([4, 1])
     
     with col_settings:
-        st.markdown("<h3>الإعدادات</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 dir='rtl' style='text-align: right; width: 100%;'>الإعدادات</h3>", unsafe_allow_html=True)
         lang = st.radio("اختر لغة الشجرة:", ["عربي", "إنجليزي"])
         st.markdown("---")
-        # الزرار هياخد العرض كله عشان شكله يبقى متناسق يمين
-        if st.button("رفع ملف جديد", use_container_width=True):
+        if st.button("رفع ملف جديد"):
             st.session_state.base_df = None
             st.rerun()
 
     with col_data:
-        st.markdown("<h3>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
         
-        # الترتيب الطبيعي للأعمدة، وبما إن التطبيق يمين-ليسار، رقم اللجنة هيكون أول واحد يمين
-        input_display_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور']
+        # الترتيب ده بيخلي "رقم اللجنة" أقصى اليمين على الشاشة
+        input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
         df_for_editor = st.session_state.base_df[input_display_cols]
         
         input_table_height = (len(st.session_state.base_df) + 1) * 38
@@ -131,7 +124,9 @@ if st.session_state.base_df is not None:
             height=input_table_height
         )
         
+        st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
         calc_button = st.button("حساب الشجرة وتوليد النتيجة", type="primary")
+        st.markdown("</div>", unsafe_allow_html=True)
 
         if calc_button:
             with st.spinner('جاري الحساب...'):
@@ -183,17 +178,19 @@ if st.session_state.base_df is not None:
                 total_row = pd.DataFrame({'رقم اللجنة': ['الإجمالي'], 'مكان اللجنة': [''], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                # ترتيب الأعمدة للمخرجات
-                display_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
+                # الترتيب ده بيخلي "رقم اللجنة" أقصى اليمين في النتيجة
+                display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
                 result_df_display = result_df_with_total[display_cols]
                 
-                st.markdown(f"<div style='color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
+                st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
                 
                 output_table_height = (len(result_df_display) + 1) * 38
-                st.dataframe(result_df_display, hide_index=True, use_container_width=True, height=output_table_height)
+                styled_output = result_df_display.style.set_properties(**{'text-align': 'right'})
+                st.dataframe(styled_output, hide_index=True, use_container_width=True, height=output_table_height)
                 
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    # الترتيب ده سليم عشان يفتح طبيعي (أ، ب، ج) جوه الإكسيل
                     excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
                     result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة')
                     writer.sheets['الشجرة'].sheet_view.rightToLeft = True
@@ -207,7 +204,7 @@ if st.session_state.base_df is not None:
                 )
                 
                 st.markdown(
-                    "<p style='color: gray; margin-top: 10px; font-size: 14px;'>"
+                    "<p dir='rtl' style='text-align: right; color: gray; margin-top: 10px; font-size: 14px;'>"
                     "💡 نصيحة: للطباعة كـ PDF، قم بفتح ملف الإكسيل الذي تم تحميله، ثم اضغط (Ctrl+P) واختر Save as PDF"
                     "</p>", 
                     unsafe_allow_html=True
