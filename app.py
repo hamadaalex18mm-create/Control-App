@@ -6,12 +6,18 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="برنامج توزيع كراسات الإجابة", layout="wide")
 
-# كود CSS لضبط اتجاه ومحاذاة النصوص داخل التطبيق لليمين
+# كود CSS مكثف لضبط كل شيء لليمين (العناوين، النصوص، والجدول)
 st.markdown(
     """
     <style>
-    /* محاذاة العناوين والنصوص لليمين */
-    .stMarkdown, .stText { text-align: right; direction: rtl; }
+    /* ضبط اتجاه الصفحة بالكامل */
+    .main { direction: rtl; text-align: right; }
+    /* إجبار النصوص والمكونات على اليمين */
+    .stMarkdown, .stText, .stButton, .stRadio, .stDataFrame { text-align: right; direction: rtl; }
+    /* محاذاة العناوين داخل الجداول */
+    [data-testid="stHeaderRowCell"] { text-align: right !important; direction: rtl !important; }
+    /* محاذاة البيانات داخل الجداول */
+    [data-testid="stTableCell"] { text-align: right !important; direction: rtl !important; }
     </style>
     """,
     unsafe_allow_html=True
@@ -60,7 +66,7 @@ if st.session_state.base_df is None:
             if "رقم اللجنة" in df.columns and "مكان اللجنة" in df.columns:
                 st.session_state.base_df = df[['رقم اللجنة', 'مكان اللجنة']].copy()
                 st.session_state.base_df['عدد الحضور'] = 0
-                st.success("تم رفع الملف بنجاح! جاري التجهيز...")
+                st.success("تم رفع الملف بنجاح!")
                 st.rerun()
             else:
                 st.error("الملف يجب أن يحتوي على عمودين باسم: 'رقم اللجنة' و 'مكان اللجنة'")
@@ -71,7 +77,7 @@ if st.session_state.base_df is not None:
     m_col1, m_col2 = st.columns([1, 4])
     
     with m_col1:
-        st.markdown("<h3 dir='rtl' style='text-align: right;'>الإعدادات</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: right;'>الإعدادات</h3>", unsafe_allow_html=True)
         lang = st.radio("اختر لغة الشجرة:", ["عربي", "إنجليزي"])
         st.markdown("---")
         if st.button("تفريغ البيانات لرفع ملف جديد"):
@@ -79,11 +85,11 @@ if st.session_state.base_df is not None:
             st.rerun()
 
     with m_col2:
-        st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
-        st.markdown("<p dir='rtl' style='text-align: right; color: gray;'>نصيحة: للطباعة كـ PDF، قم بتحميل ملف الإكسيل وافتحه، ثم اضغط (Ctrl+P) واختر Save as PDF</p>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: right; color: gray;'>نصيحة: للطباعة كـ PDF، قم بتحميل ملف الإكسيل وافتحه، ثم اضغط (Ctrl+P) واختر Save as PDF</p>", unsafe_allow_html=True)
         
-        # ترتيب الأعمدة للعرض فقط
-        input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
+        # ترتيب الأعمدة للعرض: رقم اللجنة أقصى اليمين
+        input_display_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور']
         df_for_editor = st.session_state.base_df[input_display_cols]
         
         input_table_height = (len(st.session_state.base_df) + 1) * 38
@@ -96,22 +102,19 @@ if st.session_state.base_df is not None:
             height=input_table_height
         )
         
-        st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
         calc_button = st.button("حساب الشجرة وتوليد النتيجة", type="primary")
-        st.markdown("</div>", unsafe_allow_html=True)
 
         if calc_button:
             with st.spinner('جاري الحساب...'):
                 letters = ARABIC_LETTERS if lang == "عربي" else ENGLISH_LETTERS
                 tree_results = []
-                
                 current_letter_idx = 0
                 current_paper = 1
                 
                 for index, row in edited_df.iterrows():
                     try:
                         attendance = int(row['عدد الحضور'])
-                    except (ValueError, TypeError):
+                    except:
                         attendance = 0
                         
                     if attendance <= 0:
@@ -122,10 +125,7 @@ if st.session_state.base_df is not None:
                     committee_tree = []
                     
                     while remaining > 0:
-                        if current_letter_idx >= len(letters):
-                            st.warning("تم تجاوز عدد الحروف المتاحة في الأبجدية!")
-                            break
-
+                        if current_letter_idx >= len(letters): break
                         available_in_current = 101 - current_paper
                         letter = letters[current_letter_idx]
                         
@@ -135,10 +135,8 @@ if st.session_state.base_df is not None:
                                 committee_tree.append(f"{letter} {end_paper}-{current_paper}")
                             else:
                                 committee_tree.append(f"{letter} {current_paper}-{end_paper}")
-                            
                             current_paper = end_paper + 1
                             remaining = 0
-                            
                             if current_paper > 100:
                                 current_letter_idx += 1
                                 current_paper = 1
@@ -147,57 +145,37 @@ if st.session_state.base_df is not None:
                                 committee_tree.append(f"{letter} 100-{current_paper}")
                             else:
                                 committee_tree.append(f"{letter} {current_paper}-100")
-                            
                             remaining -= available_in_current
                             current_letter_idx += 1
                             current_paper = 1
                     
-                    # الفاصل عبارة عن فاصلة ومسافة كما طلبت
                     tree_results.append(", ".join(committee_tree))
                 
                 result_df = edited_df.copy()
                 col_name = 'الشجرة (عربي)' if lang == "عربي" else 'الشجرة (انجليزي)'
                 result_df[col_name] = tree_results
                 
-                # حساب إجمالي الحضور
+                # حساب الإجمالي
                 total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
-                
-                total_row = pd.DataFrame({
-                    'رقم اللجنة': ['الإجمالي'],
-                    'مكان اللجنة': [''],
-                    'عدد الحضور': [int(total_attendance)],
-                    col_name: ['']
-                })
-                
+                total_row = pd.DataFrame({'رقم اللجنة': ['الإجمالي'], 'مكان اللجنة': [''], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                # 1. ترتيب الأعمدة للعرض على الشاشة
-                display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
+                # الترتيب للعرض على الشاشة: رقم اللجنة يمين، الشجرة يسار
+                display_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
                 result_df_display = result_df_with_total[display_cols]
                 
-                # 2. ترتيب الأعمدة للطباعة والإكسيل
-                excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
-                result_df_excel = result_df_with_total[excel_cols]
-                
-                st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: right; color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
                 
                 output_table_height = (len(result_df_display) + 1) * 38
-                
-                # إجبار كل الخلايا في جدول المخرجات على المحاذاة لليمين
+                # ستايل إضافي للمحاذاة لليمين
                 styled_output = result_df_display.style.set_properties(**{'text-align': 'right'})
                 st.dataframe(styled_output, hide_index=True, use_container_width=True, height=output_table_height)
                 
-                # إعداد ملف الإكسيل للحفظ
+                # إعداد ملف الإكسيل
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    result_df_excel.to_excel(writer, index=False, sheet_name='الشجرة')
+                    result_df_display.to_excel(writer, index=False, sheet_name='الشجرة')
                     worksheet = writer.sheets['الشجرة']
                     worksheet.sheet_view.rightToLeft = True
                 
-                st.download_button(
-                    label="📥 تحميل النتيجة في ملف إكسيل",
-                    data=output.getvalue(),
-                    file_name="توزيع_كراسات_الإجابة.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    type="primary"
-                )
+                st.download_button(label="📥 تحميل النتيجة في ملف إكسيل", data=output.getvalue(), file_name="توزيع_كراسات_الإجابة.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
