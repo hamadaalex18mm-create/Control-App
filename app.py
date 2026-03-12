@@ -6,58 +6,41 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="توزيع كراسات الإجابة", layout="wide")
 
-# كود CSS دقيق جداً لضبط الراديو بوتون لليمين للشمال بدون لمس باقي الصفحة
+# ==========================================
+# كود CSS جراحي لحل المشكلة بدون المساس بتخطيط الصفحة
+# ==========================================
 st.markdown(
     """
     <style>
-    /* محاذاة النصوص العادية لليمين */
-    .stMarkdown, .stText, p, label { text-align: right !important; direction: rtl !important; }
+    /* 1. محاذاة العناوين والنصوص لليمين وتوسيط العنوان الرئيسي */
+    .stMarkdown, .stText, p, h3 { text-align: right !important; direction: rtl !important; }
+    h1 { text-align: center !important; width: 100% !important; direction: rtl !important; }
     
-    /* توسيط العنوان الرئيسي */
-    h1 {
-        text-align: center !important;
-        width: 100% !important;
+    /* 2. الحل السحري للراديو بوتون: تحويل صندوق الاختيار فقط ليكون RTL */
+    [data-testid="stRadio"] {
         direction: rtl !important;
+        text-align: right !important;
     }
-
-    /* --------------------------------------------------- */
-    /* السحر هنا: ضبط الراديو بوتون (من اليمين للشمال) */
-    /* 1. دفع الدوائر والكلمات لأقصى يمين العمود */
-    div[role="radiogroup"] {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end !important;
+    /* محاذاة الخيارات نفسها لليمين داخل الصندوق */
+    [data-testid="stRadio"] [role="radiogroup"] {
+        align-items: flex-start !important; /* في بيئة RTL، البداية تعني اليمين */
     }
-    /* 2. عكس ترتيب الدائرة والكلمة (لتصبح الدائرة يمين الكلمة) */
-    div[role="radiogroup"] > label {
-        display: flex;
-        flex-direction: row-reverse !important;
+    
+    /* 3. إجبار الأزرار على أقصى اليمين */
+    div[data-testid="stButton"] { display: flex; justify-content: flex-end; width: 100%; }
+    div[data-testid="stDownloadButton"] { display: flex; justify-content: flex-end; width: 100%; }
+    
+    /* 4. محاذاة البيانات داخل الجداول لليمين تماماً */
+    [data-testid="stDataFrame"] div[role="gridcell"], 
+    [data-testid="stDataFrame"] div[role="columnheader"] {
+        text-align: right !important;
         justify-content: flex-end !important;
     }
-    /* 3. عمل مسافة صغيرة بين الدائرة والكلمة */
-    div[role="radiogroup"] > label > div:first-child {
-        margin-left: 8px !important;
-        margin-right: 0px !important;
-    }
-    /* دفع الأزرار داخل الإعدادات لليمين */
-    div[data-testid="stButton"] {
-        display: flex;
-        justify-content: flex-end;
-    }
-    /* --------------------------------------------------- */
-
-    /* محاذاة البيانات داخل الجداول لليمين */
-    [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th {
-        text-align: right !important;
-        direction: rtl !important;
-    }
-
-    /* زرار التحميل */
-    .stDownloadButton { display: flex; justify-content: flex-end; }
     </style>
     """,
     unsafe_allow_html=True
 )
+# ==========================================
 
 # --- تنسيق الهيدر (الشعارات والعنوان) ---
 col_left, col_space, col_right = st.columns([1, 3, 1])
@@ -119,10 +102,12 @@ if st.session_state.base_df is None:
 
 # --- مرحلة واجهة العمل ---
 if st.session_state.base_df is not None:
+    # تخطيط الصفحة: الإعدادات على اليسار (1) والجدول على اليمين (4) كما طلبتم
     col_settings, col_data = st.columns([1, 4])
     
     with col_settings:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>الإعدادات</h3>", unsafe_allow_html=True)
+        # الراديو بوتون سيخضع الآن لكود الـ RTL وسينعكس بشكل طبيعي
         lang = st.radio("اختر لغة الشجرة:", ["عربي", "إنجليزي"])
         st.markdown("---")
         if st.button("تفريغ البيانات لرفع ملف جديد"):
@@ -132,6 +117,7 @@ if st.session_state.base_df is not None:
     with col_data:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
         
+        # الترتيب السليم للأعمدة (رقم اللجنة أقصى اليمين)
         input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
         df_for_editor = st.session_state.base_df[input_display_cols]
         
