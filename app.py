@@ -6,17 +6,6 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="برنامج توزيع كراسات الإجابة", layout="wide")
 
-# كود CSS لضبط اتجاه ومحاذاة النصوص داخل التطبيق لليمين
-st.markdown(
-    """
-    <style>
-    /* محاذاة العناوين والنصوص لليمين */
-    .stMarkdown, .stText { text-align: right; direction: rtl; }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 # --- تنسيق الهيدر (الشعارات والعنوان) ---
 col_left, col_space, col_right = st.columns([1, 3, 1])
 
@@ -82,10 +71,9 @@ if st.session_state.base_df is not None:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
         st.markdown("<p dir='rtl' style='text-align: right; color: gray;'>نصيحة: للطباعة كـ PDF، قم بتحميل ملف الإكسيل وافتحه، ثم اضغط (Ctrl+P) واختر Save as PDF</p>", unsafe_allow_html=True)
         
-        # ترتيب الأعمدة للعرض فقط (رقم اللجنة يمين)
+        # جدول الإدخال
         input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
         df_for_editor = st.session_state.base_df[input_display_cols]
-        
         input_table_height = (len(st.session_state.base_df) + 1) * 38
         
         edited_df = st.data_editor(
@@ -147,28 +135,54 @@ if st.session_state.base_df is not None:
                 col_name = 'الشجرة (عربي)' if lang == "عربي" else 'الشجرة (انجليزي)'
                 result_df[col_name] = tree_results
                 
-                # حساب إجمالي الحضور
                 total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
                 total_row = pd.DataFrame({'رقم اللجنة': ['الإجمالي'], 'مكان اللجنة': [''], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
-                result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                # ترتيب الأعمدة للعرض: رقم اللجنة يمين
-                display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
-                result_df_display = result_df_with_total[display_cols]
+                # ترتيب الأعمدة الطبيعي للإكسيل والـ HTML
+                natural_order = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
+                final_df = result_df[natural_order]
+                final_df_with_total = pd.concat([final_df, total_row[natural_order]], ignore_index=True)
                 
-                st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
+                st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-weight: bold; margin-bottom: 15px; margin-top: 20px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
                 
-                output_table_height = (len(result_df_display) + 1) * 38
-                
-                # التعديل السحري هنا: إجبار محاذاة كل الخلايا لليمين تماماً
-                styled_output = result_df_display.style.set_properties(**{'text-align': 'right'})
-                st.dataframe(styled_output, hide_index=True, use_container_width=True, height=output_table_height)
+                # ==========================================
+                # بناء جدول HTML مخصص للتغلب على مشاكل Streamlit
+                # ==========================================
+                html_table = final_df_with_total.to_html(index=False, classes="custom-rtl-table")
+                custom_css = """
+                <style>
+                    .custom-rtl-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        direction: rtl; /* دي اللي بتعكس الجدول وتخلي رقم اللجنة على اليمين */
+                        text-align: right;
+                        font-family: Arial, sans-serif;
+                        margin-bottom: 20px;
+                        background-color: white;
+                    }
+                    .custom-rtl-table th, .custom-rtl-table td {
+                        border: 1px solid #e2e8f0;
+                        padding: 12px;
+                        text-align: right !important; /* إجبار المحاذاة لليمين */
+                    }
+                    .custom-rtl-table th {
+                        background-color: #f8fafc;
+                        color: #1e293b;
+                        font-weight: bold;
+                        border-bottom: 2px solid #cbd5e1;
+                    }
+                    .custom-rtl-table tr:hover {
+                        background-color: #f1f5f9;
+                    }
+                </style>
+                """
+                st.markdown(custom_css + html_table, unsafe_allow_html=True)
+                # ==========================================
                 
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    # في الإكسيل الترتيب من اليمين للشمال طبيعي
-                    excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
-                    result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة')
-                    writer.sheets['الشجرة'].sheet_view.rightToLeft = True
+                    final_df_with_total.to_excel(writer, index=False, sheet_name='الشجرة')
+                    worksheet = writer.sheets['الشجرة']
+                    worksheet.sheet_view.rightToLeft = True
                 
                 st.download_button(label="📥 تحميل النتيجة في ملف إكسيل", data=output.getvalue(), file_name="توزيع_كراسات_الإجابة.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
