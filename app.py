@@ -6,6 +6,17 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="برنامج توزيع كراسات الإجابة", layout="wide")
 
+# كود CSS لضبط اتجاه ومحاذاة النصوص داخل التطبيق لليمين
+st.markdown(
+    """
+    <style>
+    /* محاذاة العناوين والنصوص لليمين */
+    .stMarkdown, .stText { text-align: right; direction: rtl; }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- تنسيق الهيدر (الشعارات والعنوان) ---
 col_left, col_space, col_right = st.columns([1, 3, 1])
 
@@ -60,7 +71,6 @@ if st.session_state.base_df is not None:
     m_col1, m_col2 = st.columns([1, 4])
     
     with m_col1:
-        # محاذاة العنوان لليمين
         st.markdown("<h3 dir='rtl' style='text-align: right;'>الإعدادات</h3>", unsafe_allow_html=True)
         lang = st.radio("اختر لغة الشجرة:", ["عربي", "إنجليزي"])
         st.markdown("---")
@@ -69,22 +79,23 @@ if st.session_state.base_df is not None:
             st.rerun()
 
     with m_col2:
-        # محاذاة العنوان والجملة التوضيحية لليمين وتصحيح اتجاه النص
         st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
         st.markdown("<p dir='rtl' style='text-align: right; color: gray;'>نصيحة: للطباعة كـ PDF، قم بتحميل ملف الإكسيل وافتحه، ثم اضغط (Ctrl+P) واختر Save as PDF</p>", unsafe_allow_html=True)
         
-        # حساب ارتفاع الجدول بناءً على عدد اللجان عشان يظهر كامل
+        # ترتيب الأعمدة للعرض فقط (لكي تظهر "رقم اللجنة" في أقصى اليمين)
+        input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
+        df_for_editor = st.session_state.base_df[input_display_cols]
+        
         input_table_height = (len(st.session_state.base_df) + 1) * 38
         
         edited_df = st.data_editor(
-            st.session_state.base_df,
+            df_for_editor,
             disabled=["رقم اللجنة", "مكان اللجنة"],
             hide_index=True,
             use_container_width=True,
             height=input_table_height
         )
         
-        # تنسيق الزرار عشان يكون على اليمين برضه
         st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
         calc_button = st.button("حساب الشجرة وتوليد النتيجة", type="primary")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -147,9 +158,7 @@ if st.session_state.base_df is not None:
                 col_name = 'الشجرة (عربي)' if lang == "عربي" else 'الشجرة (انجليزي)'
                 result_df[col_name] = tree_results
                 
-                final_columns = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
-                result_df = result_df[final_columns]
-                
+                # حساب إجمالي الحضور
                 total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
                 
                 total_row = pd.DataFrame({
@@ -161,17 +170,26 @@ if st.session_state.base_df is not None:
                 
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                # إظهار رسالة النجاح من اليمين
+                # 1. ترتيب الأعمدة للعرض على الشاشة (الشجرة في اليسار، ورقم اللجنة في اليمين)
+                display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
+                result_df_display = result_df_with_total[display_cols]
+                
+                # 2. ترتيب الأعمدة للطباعة والإكسيل (الترتيب الطبيعي A, B, C, D)
+                excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
+                result_df_excel = result_df_with_total[excel_cols]
+                
                 st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
                 
-                # حساب ارتفاع جدول النتيجة عشان يظهر كامل
-                output_table_height = (len(result_df_with_total) + 1) * 38
+                output_table_height = (len(result_df_display) + 1) * 38
+                st.dataframe(result_df_display, hide_index=True, use_container_width=True, height=output_table_height)
                 
-                st.dataframe(result_df_with_total, hide_index=True, use_container_width=True, height=output_table_height)
-                
+                # إعداد ملف الإكسيل للحفظ
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    result_df_with_total.to_excel(writer, index=False, sheet_name='الشجرة')
+                    result_df_excel.to_excel(writer, index=False, sheet_name='الشجرة')
+                    # ضبط الشيت ليفتح من اليمين لليسار في برنامج الإكسيل
+                    worksheet = writer.sheets['الشجرة']
+                    worksheet.sheet_view.rightToLeft = True
                 
                 st.download_button(
                     label="📥 تحميل النتيجة في ملف إكسيل",
