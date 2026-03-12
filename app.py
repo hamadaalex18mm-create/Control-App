@@ -6,7 +6,7 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="توزيع كراسات الإجابة", layout="wide")
 
-# كود CSS بسيط ومستقر لضبط النصوص العادية وتوسيط العنوان فقط
+# كود CSS مبسط جداً لضبط النصوص بدون تخريب ترتيب الصفحة
 st.markdown(
     """
     <style>
@@ -20,6 +20,12 @@ st.markdown(
         direction: rtl !important;
     }
     
+    /* محاذاة البيانات داخل الجداول لليمين */
+    [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th {
+        text-align: right !important;
+        direction: rtl !important;
+    }
+
     /* زرار التحميل */
     .stDownloadButton { display: flex; justify-content: flex-end; }
     </style>
@@ -31,7 +37,7 @@ st.markdown(
 col_left, col_space, col_right = st.columns([1, 3, 1])
 
 with col_left:
-    # شعار الوحدة (أعلى اليسار)
+    # 1. شعار الوحدة (أعلى اليسار)
     if os.path.exists("logo_unit.jpg"):
         st.image("logo_unit.jpg", use_container_width=True)
     elif os.path.exists("logo_unit.png"):
@@ -49,7 +55,7 @@ with col_space:
     )
 
 with col_right:
-    # شعار الكلية (أعلى اليمين)
+    # 2. شعار الكلية (أعلى اليمين)
     if os.path.exists("logo_faculty.jpg"):
         st.image("logo_faculty.jpg", use_container_width=True)
     elif os.path.exists("logo_faculty.png"):
@@ -57,7 +63,7 @@ with col_right:
 
 st.markdown("---")
 
-# --- الحروف الأبجدية ---
+# --- الحروف الأبجدية (مؤمنة ضد أخطاء النسخ) ---
 ARABIC_LETTERS = "أ ب ج د هـ و ز ح ط ي ك ل م ن س ع ف ص ق ر ش ت ث خ ذ ض ظ غ".split(" ")
 ENGLISH_LETTERS = "A B C D E F G H I J K L M N O P Q R S T U V W X Y Z".split(" ")
 
@@ -90,31 +96,27 @@ if st.session_state.base_df is None:
 
 # --- مرحلة واجهة العمل ---
 if st.session_state.base_df is not None:
-    # الإعدادات على الشمال (1) والجدول على اليمين (4) زي ما كانوا بالظبط
-    col_settings, col_data = st.columns([1, 4])
+    col_data, col_settings = st.columns([4, 1])
     
     with col_settings:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>الإعدادات</h3>", unsafe_allow_html=True)
         lang = st.radio("اختر لغة الشجرة:", ["عربي", "إنجليزي"])
         st.markdown("---")
-        if st.button("تفريغ البيانات لرفع ملف جديد"):
+        if st.button("رفع ملف جديد"):
             st.session_state.base_df = None
             st.rerun()
 
     with col_data:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
         
-        # الترتيب السليم اللي بيخلي "رقم اللجنة" أقصى اليمين
+        # الترتيب السليم لظهور رقم اللجنة في اليمين
         input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
         df_for_editor = st.session_state.base_df[input_display_cols]
         
         input_table_height = (len(st.session_state.base_df) + 1) * 38
         
-        # استخدام Pandas Styler لمحاذاة النص داخل الجدول (المربعات والعناوين)
-        styled_input = df_for_editor.style.set_properties(**{'text-align': 'right'}).set_table_styles([dict(selector='th', props=[('text-align', 'right')])])
-        
         edited_df = st.data_editor(
-            styled_input,
+            df_for_editor,
             disabled=["رقم اللجنة", "مكان اللجنة"],
             hide_index=True,
             use_container_width=True,
@@ -173,21 +175,18 @@ if st.session_state.base_df is not None:
                 
                 total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
                 
-                # وضع كلمة الإجمالي في عمود (مكان اللجنة) عشان نحافظ على الأرقام في (رقم اللجنة)
+                # وضع كلمة الإجمالي في عمود مكان اللجنة للحفاظ على أرقام اللجان محاذية لليمين
                 total_row = pd.DataFrame({'رقم اللجنة': [''], 'مكان اللجنة': ['الإجمالي'], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                # ترتيب المخرجات
+                # الترتيب السليم لمخرجات النتيجة
                 display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
                 result_df_display = result_df_with_total[display_cols]
                 
                 st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
                 
                 output_table_height = (len(result_df_display) + 1) * 38
-                
-                # محاذاة يدوية لجدول المخرجات لضمان اليمين
-                styled_output = result_df_display.style.set_properties(**{'text-align': 'right'}).set_table_styles([dict(selector='th', props=[('text-align', 'right')])])
-                st.dataframe(styled_output, hide_index=True, use_container_width=True, height=output_table_height)
+                st.dataframe(result_df_display, hide_index=True, use_container_width=True, height=output_table_height)
                 
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
