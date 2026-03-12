@@ -6,14 +6,17 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="برنامج توزيع كراسات الإجابة", layout="wide")
 
-# كود CSS لضبط اتجاه ومحاذاة النصوص داخل التطبيق لليمين (بدون التأثير على بنية الجدول)
+# كود CSS لضبط اتجاه ومحاذاة النصوص داخل التطبيق لليمين
 st.markdown(
     """
     <style>
     /* محاذاة العناوين والنصوص لليمين */
     .stMarkdown, .stText { text-align: right; direction: rtl; }
     /* التعديل السحري: إجبار كل خلايا الجدول والأرقام على المحاذاة لليمين */
-    [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th { text-align: right !important; direction: rtl !important; }
+    [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th { 
+        text-align: right !important; 
+        direction: rtl !important; 
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -173,4 +176,11 @@ if st.session_state.base_df is not None:
                     result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة')
                     writer.sheets['الشجرة'].sheet_view.rightToLeft = True
                 
-                st.download_button(label="📥 تحميل النتيجة في ملف إكسيل", data=output.getvalue(), file_name="توزيع_كراسات_الإجابة.xlsx", mime="application/vnd.
+                # زرار التحميل متقسم لسطور قصيرة عشان ما يتقطعش
+                st.download_button(
+                    label="📥 تحميل النتيجة في ملف إكسيل",
+                    data=output.getvalue(),
+                    file_name="توزيع_كراسات_الإجابة.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    type="primary"
+                )
