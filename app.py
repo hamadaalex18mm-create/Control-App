@@ -9,19 +9,16 @@ st.set_page_config(page_title="برنامج توزيع كراسات الإجاب
 # --- تنسيق الهيدر (الشعارات والعنوان) ---
 col_left, col_space, col_right = st.columns([1, 3, 1])
 
-# شعار الوحدة (أعلى اليسار) 
 if os.path.exists("logo_unit.jpg"):
     col_left.image("logo_unit.jpg", use_container_width=True)
 elif os.path.exists("logo_unit.png"):
     col_left.image("logo_unit.png", use_container_width=True)
 
-# شعار الكلية (أعلى اليمين) 
 if os.path.exists("logo_faculty.jpg"):
     col_right.image("logo_faculty.jpg", use_container_width=True)
 elif os.path.exists("logo_faculty.png"):
     col_right.image("logo_faculty.png", use_container_width=True)
 
-# العنوان في المنتصف
 st.markdown(
     """
     <div style='text-align: center; margin-top: -50px; margin-bottom: 30px;'>
@@ -63,7 +60,8 @@ if st.session_state.base_df is not None:
     m_col1, m_col2 = st.columns([1, 4])
     
     with m_col1:
-        st.markdown("### الإعدادات")
+        # محاذاة العنوان لليمين
+        st.markdown("<h3 dir='rtl' style='text-align: right;'>الإعدادات</h3>", unsafe_allow_html=True)
         lang = st.radio("اختر لغة الشجرة:", ["عربي", "إنجليزي"])
         st.markdown("---")
         if st.button("تفريغ البيانات لرفع ملف جديد"):
@@ -71,17 +69,27 @@ if st.session_state.base_df is not None:
             st.rerun()
 
     with m_col2:
-        st.markdown("### إدخال أعداد الحضور")
-        st.caption("نصيحة: للطباعة كـ PDF، قم بتحميل ملف الإكسيل وافتحه واضغط (Ctrl+P) ثم اختر Save as PDF")
+        # محاذاة العنوان والجملة التوضيحية لليمين وتصحيح اتجاه النص
+        st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
+        st.markdown("<p dir='rtl' style='text-align: right; color: gray;'>نصيحة: للطباعة كـ PDF، قم بتحميل ملف الإكسيل وافتحه، ثم اضغط (Ctrl+P) واختر Save as PDF</p>", unsafe_allow_html=True)
+        
+        # حساب ارتفاع الجدول بناءً على عدد اللجان عشان يظهر كامل
+        input_table_height = (len(st.session_state.base_df) + 1) * 38
         
         edited_df = st.data_editor(
             st.session_state.base_df,
             disabled=["رقم اللجنة", "مكان اللجنة"],
             hide_index=True,
-            use_container_width=True
+            use_container_width=True,
+            height=input_table_height
         )
         
-        if st.button("حساب الشجرة وتوليد النتيجة", type="primary"):
+        # تنسيق الزرار عشان يكون على اليمين برضه
+        st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
+        calc_button = st.button("حساب الشجرة وتوليد النتيجة", type="primary")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        if calc_button:
             with st.spinner('جاري الحساب...'):
                 letters = ARABIC_LETTERS if lang == "عربي" else ENGLISH_LETTERS
                 tree_results = []
@@ -139,14 +147,11 @@ if st.session_state.base_df is not None:
                 col_name = 'الشجرة (عربي)' if lang == "عربي" else 'الشجرة (انجليزي)'
                 result_df[col_name] = tree_results
                 
-                # ترتيب الأعمدة زي ما طلبت بالظبط
                 final_columns = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
                 result_df = result_df[final_columns]
                 
-                # حساب إجمالي عدد الحضور
                 total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
                 
-                # إنشاء صف الإجمالي
                 total_row = pd.DataFrame({
                     'رقم اللجنة': ['الإجمالي'],
                     'مكان اللجنة': [''],
@@ -154,11 +159,15 @@ if st.session_state.base_df is not None:
                     col_name: ['']
                 })
                 
-                # دمج النتيجة مع صف الإجمالي
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                st.success(f"تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب")
-                st.dataframe(result_df_with_total, hide_index=True, use_container_width=True)
+                # إظهار رسالة النجاح من اليمين
+                st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
+                
+                # حساب ارتفاع جدول النتيجة عشان يظهر كامل
+                output_table_height = (len(result_df_with_total) + 1) * 38
+                
+                st.dataframe(result_df_with_total, hide_index=True, use_container_width=True, height=output_table_height)
                 
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
