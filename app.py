@@ -145,7 +145,6 @@ if st.session_state.base_df is not None:
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_tree]
-                # تم الإزاحة لتبدأ من الصف 6 (بترك مساحة 4 صفوف للبيانات + صف فارغ)
                 result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة', startrow=5)
                 
                 workbook = writer.book
@@ -163,7 +162,6 @@ if st.session_state.base_df is not None:
                 
                 formatted_date = exam_date.strftime("%Y-%m-%d") if exam_date else ""
                 
-                # إضافة عدد الحضور لبيانات الهيدر
                 meta_data = [
                     ("الكنترول", control_name), 
                     ("المقرر", course_name), 
@@ -181,7 +179,6 @@ if st.session_state.base_df is not None:
                     worksheet[f'A{i}'].font = Font(bold=True)
                     worksheet[f'B{i}'].font = Font(bold=True)
 
-                # تنسيق الهيدر للجدول (أصبح الآن في الصف 6)
                 for col_num in range(1, 5):
                     cell = worksheet.cell(row=6, column=col_num)
                     cell.fill = header_fill
@@ -191,7 +188,6 @@ if st.session_state.base_df is not None:
                 
                 worksheet.auto_filter.ref = f"A6:D{worksheet.max_row-1}"
 
-                # تنسيق البيانات داخل الجدول (تبدأ من الصف 7)
                 for r_idx in range(7, worksheet.max_row + 1):
                     is_total = (r_idx == worksheet.max_row)
                     attendance_val = worksheet.cell(row=r_idx, column=3).value
@@ -215,10 +211,20 @@ if st.session_state.base_df is not None:
                 worksheet.column_dimensions['B'].width = 35
                 worksheet.column_dimensions['C'].width = 15
                 worksheet.column_dimensions['D'].width = 30
+                
+                # ==========================================
+                # إعدادات الطباعة الاحترافية
+                # ==========================================
+                worksheet.print_area = f"A1:D{last_row}" # تحديد منطقة الطباعة
+                worksheet.page_setup.paperSize = worksheet.PAPERSIZE_A4 # مقاس A4
+                worksheet.sheet_properties.pageSetUpPr.fitToPage = True # تفعيل الاحتواء
+                worksheet.page_setup.fitToWidth = 1 # طباعة كل الأعمدة في صفحة واحدة بالعرض
+                worksheet.page_setup.fitToHeight = 0 # السماح بتعدد الصفحات بالطول
+                worksheet.print_options.horizontalCentered = True # توسيط الجدول في الورقة
+                # ==========================================
             
             st.markdown("<div style='display: flex; justify-content: flex-end; width: 100%;'>", unsafe_allow_html=True)
             
-            # التسمية الديناميكية لملف الإكسيل
             safe_course = course_name.strip() if course_name.strip() else "بدون_مقرر"
             safe_control = control_name.strip() if control_name.strip() else "بدون_كنترول"
             dynamic_file_name = f"توزيع الشجرة_{safe_course}_{safe_control}.xlsx"
