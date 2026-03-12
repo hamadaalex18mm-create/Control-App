@@ -11,12 +11,12 @@ st.markdown(
     """
     <style>
     /* محاذاة كل النصوص لليمين */
-    .stMarkdown, .stText, p, label, .stDataFrame td, .stDataFrame th, .stRadio { text-align: right !important; direction: rtl !important; }
+    .stMarkdown, .stText, p, label, .stRadio { text-align: right !important; direction: rtl !important; }
     
     /* ضبط الراديو بوتون ليكون على اليمين */
     div[role="radiogroup"] { align-items: flex-start; direction: rtl; }
     
-    /* ضبط الخلايا داخل الجداول */
+    /* ضبط الخلايا داخل الجداول لتكون نصوصها يمين */
     [data-testid="stDataFrame"] div[role="gridcell"], 
     [data-testid="stDataFrame"] div[role="columnheader"] {
         text-align: right !important;
@@ -64,8 +64,7 @@ elif os.path.exists("logo_unit.png"):
 
 st.markdown("---")
 
-# --- الخدعة البرمجية لمنع أخطاء النسخ في الحروف ---
-# يتم كتابتها كنص واحد مستمر بدون علامات تنصيص معقدة، والبرنامج يقسمها
+# --- الحروف الأبجدية (مؤمنة ضد القطع) ---
 ARABIC_LETTERS = "أ ب ج د هـ و ز ح ط ي ك ل م ن س ع ف ص ق ر ش ت ث خ ذ ض ظ غ".split(" ")
 ENGLISH_LETTERS = "A B C D E F G H I J K L M N O P Q R S T U V W X Y Z".split(" ")
 
@@ -111,6 +110,7 @@ if st.session_state.base_df is not None:
     with col_data:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
         
+        # الترتيب ده بيخلي "رقم اللجنة" أقصى اليمين في جدول المدخلات
         input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
         df_for_editor = st.session_state.base_df[input_display_cols]
         
@@ -178,7 +178,8 @@ if st.session_state.base_df is not None:
                 total_row = pd.DataFrame({'رقم اللجنة': ['الإجمالي'], 'مكان اللجنة': [''], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                display_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
+                # --- التعديل هنا: الترتيب ده بيخلي "رقم اللجنة" أقصى اليمين في جدول المخرجات ---
+                display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
                 result_df_display = result_df_with_total[display_cols]
                 
                 st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
@@ -189,6 +190,7 @@ if st.session_state.base_df is not None:
                 
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    # ترتيب ملف الإكسيل عشان يفتح طبيعي (أ، ب، ج)
                     excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
                     result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة')
                     writer.sheets['الشجرة'].sheet_view.rightToLeft = True
@@ -203,6 +205,7 @@ if st.session_state.base_df is not None:
                 )
                 st.markdown("</div>", unsafe_allow_html=True)
                 
+                # النصيحة تحت زر التحميل
                 st.markdown(
                     "<p dir='rtl' style='text-align: right; color: gray; margin-top: 10px; font-size: 14px;'>"
                     "💡 نصيحة: للطباعة كـ PDF، قم بفتح ملف الإكسيل الذي تم تحميله، ثم اضغط (Ctrl+P) واختر Save as PDF"
