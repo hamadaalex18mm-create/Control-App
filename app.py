@@ -7,8 +7,6 @@ import os
 st.set_page_config(page_title="برنامج توزيع كراسات الإجابة", layout="wide")
 
 # --- تنسيق الهيدر (الشعارات والعنوان) ---
-# ترتيب الأعمدة في Streamlit بيكون من اليسار لليمين
-# العمود الأول (يسار) = شعار الوحدة ، العمود الثالث (يمين) = شعار الكلية
 col_left, col_space, col_right = st.columns([1, 3, 1])
 
 # شعار الوحدة (أعلى اليسار) 
@@ -139,14 +137,32 @@ if st.session_state.base_df is not None:
                 
                 result_df = edited_df.copy()
                 col_name = 'الشجرة (عربي)' if lang == "عربي" else 'الشجرة (انجليزي)'
-                result_df.insert(0, col_name, tree_results)
+                result_df[col_name] = tree_results
                 
-                st.success("تم الحساب بنجاح!")
-                st.dataframe(result_df, hide_index=True, use_container_width=True)
+                # ترتيب الأعمدة زي ما طلبت بالظبط
+                final_columns = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
+                result_df = result_df[final_columns]
+                
+                # حساب إجمالي عدد الحضور
+                total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
+                
+                # إنشاء صف الإجمالي
+                total_row = pd.DataFrame({
+                    'رقم اللجنة': ['الإجمالي'],
+                    'مكان اللجنة': [''],
+                    'عدد الحضور': [int(total_attendance)],
+                    col_name: ['']
+                })
+                
+                # دمج النتيجة مع صف الإجمالي
+                result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
+                
+                st.success(f"تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب")
+                st.dataframe(result_df_with_total, hide_index=True, use_container_width=True)
                 
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    result_df.to_excel(writer, index=False, sheet_name='الشجرة')
+                    result_df_with_total.to_excel(writer, index=False, sheet_name='الشجرة')
                 
                 st.download_button(
                     label="📥 تحميل النتيجة في ملف إكسيل",
