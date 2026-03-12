@@ -82,7 +82,7 @@ if st.session_state.base_df is not None:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
         st.markdown("<p dir='rtl' style='text-align: right; color: gray;'>نصيحة: للطباعة كـ PDF، قم بتحميل ملف الإكسيل وافتحه، ثم اضغط (Ctrl+P) واختر Save as PDF</p>", unsafe_allow_html=True)
         
-        # ترتيب الأعمدة للعرض فقط (لكي تظهر "رقم اللجنة" في أقصى اليمين)
+        # ترتيب الأعمدة للعرض فقط
         input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
         df_for_editor = st.session_state.base_df[input_display_cols]
         
@@ -130,4 +130,6 @@ if st.session_state.base_df is not None:
                         letter = letters[current_letter_idx]
                         
                         if remaining <= available_in_current:
-                            end_paper = current_
+                            end_paper = current_paper + remaining - 1
+                            if lang == "عربي":
+                                committee
