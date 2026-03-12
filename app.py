@@ -6,7 +6,7 @@ import os
 # إعدادات الصفحة
 st.set_page_config(page_title="توزيع كراسات الإجابة", layout="wide")
 
-# كود CSS بسيط ومستقر لضبط النصوص فقط بدون التأثير على بنية الصفحة
+# كود CSS بسيط ومستقر لضبط النصوص العادية وتوسيط العنوان فقط
 st.markdown(
     """
     <style>
@@ -19,6 +19,9 @@ st.markdown(
         width: 100% !important;
         direction: rtl !important;
     }
+    
+    /* زرار التحميل */
+    .stDownloadButton { display: flex; justify-content: flex-end; }
     </style>
     """,
     unsafe_allow_html=True
@@ -87,7 +90,7 @@ if st.session_state.base_df is None:
 
 # --- مرحلة واجهة العمل ---
 if st.session_state.base_df is not None:
-    # الإعدادات على الشمال (1) والجدول على اليمين (4) زي ما كانت بالظبط
+    # الإعدادات على الشمال (1) والجدول على اليمين (4) زي ما كانوا بالظبط
     col_settings, col_data = st.columns([1, 4])
     
     with col_settings:
@@ -107,8 +110,11 @@ if st.session_state.base_df is not None:
         
         input_table_height = (len(st.session_state.base_df) + 1) * 38
         
+        # استخدام Pandas Styler لمحاذاة النص داخل الجدول (المربعات والعناوين)
+        styled_input = df_for_editor.style.set_properties(**{'text-align': 'right'}).set_table_styles([dict(selector='th', props=[('text-align', 'right')])])
+        
         edited_df = st.data_editor(
-            df_for_editor,
+            styled_input,
             disabled=["رقم اللجنة", "مكان اللجنة"],
             hide_index=True,
             use_container_width=True,
@@ -167,7 +173,7 @@ if st.session_state.base_df is not None:
                 
                 total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
                 
-                # وضع كلمة الإجمالي في عمود (مكان اللجنة) عشان نحافظ على الأرقام في (رقم اللجنة) فتفضل محاذاتها لليمين
+                # وضع كلمة الإجمالي في عمود (مكان اللجنة) عشان نحافظ على الأرقام في (رقم اللجنة)
                 total_row = pd.DataFrame({'رقم اللجنة': [''], 'مكان اللجنة': ['الإجمالي'], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
@@ -179,8 +185,8 @@ if st.session_state.base_df is not None:
                 
                 output_table_height = (len(result_df_display) + 1) * 38
                 
-                # تطبيق محاذاة يدوية بالباندا ستايل لضمان اليمين
-                styled_output = result_df_display.style.set_properties(**{'text-align': 'right', 'direction': 'rtl'})
+                # محاذاة يدوية لجدول المخرجات لضمان اليمين
+                styled_output = result_df_display.style.set_properties(**{'text-align': 'right'}).set_table_styles([dict(selector='th', props=[('text-align', 'right')])])
                 st.dataframe(styled_output, hide_index=True, use_container_width=True, height=output_table_height)
                 
                 output = io.BytesIO()
@@ -199,7 +205,7 @@ if st.session_state.base_df is not None:
                 )
                 st.markdown("</div>", unsafe_allow_html=True)
                 
-                # النصيحة اتنقلت تحت زرار التحميل هنا
+                # النصيحة تحت زرار التحميل
                 st.markdown(
                     "<p dir='rtl' style='text-align: right; color: gray; margin-top: 10px; font-size: 14px;'>"
                     "💡 نصيحة: للطباعة كـ PDF، قم بفتح ملف الإكسيل الذي تم تحميله، ثم اضغط (Ctrl+P) واختر Save as PDF"
