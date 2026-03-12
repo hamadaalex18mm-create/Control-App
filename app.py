@@ -109,20 +109,19 @@ if st.session_state.base_df is None:
         except Exception as e:
             st.error(f"حدث خطأ أثناء قراءة الملف: {e}")
 
-# --- مرحلة واجهة العمل (الشكل الجديد المريح) ---
+# --- مرحلة واجهة العمل ---
 if st.session_state.base_df is not None:
     
     # 1. قسم البيانات الأساسية
     st.markdown("<h3>البيانات الأساسية</h3>", unsafe_allow_html=True)
     
-    # تقسيم البيانات الأساسية لعمودين عشان الشكل يكون متناسق وما ياخدش مساحة طويلة عالفاضي
+    # تم تبديل الأعمدة لتظهر مطابقة للصورة المطلوبة
     col1, col2 = st.columns(2)
-    with col2: # العمود الأيمن في الشاشة
+    with col1: # العمود الذي سيظهر يميناً الآن
         control_name = st.text_input("الكنترول:")
         exam_date = st.date_input("تاريخ الامتحان:")
-    with col1: # العمود الأيسر في الشاشة
+    with col2: # العمود الذي سيظهر يساراً الآن
         course_name = st.text_input("المقرر:")
-        # قائمة منسدلة بدلاً من الراديو بوتون لإنهاء مشكلة المحاذاة للأبد
         lang = st.selectbox("لغة الشجرة:", ["عربي", "إنجليزي"])
         
     st.markdown("<br>", unsafe_allow_html=True)
@@ -228,7 +227,6 @@ if st.session_state.base_df is not None:
             )
             
     st.markdown("---")
-    # زرار رفع ملف جديد بقى في أخر الصفحة بياخد العرض كله
     if st.button("تفريغ البيانات لرفع ملف جديد"):
         st.session_state.base_df = None
         st.rerun()
