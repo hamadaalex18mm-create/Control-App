@@ -11,10 +11,18 @@ st.markdown(
     """
     <style>
     /* محاذاة كل النصوص لليمين */
-    .stMarkdown, .stText, p, label, .stRadio { text-align: right !important; direction: rtl !important; }
+    .stMarkdown, .stText, p, label { text-align: right !important; direction: rtl !important; }
     
-    /* ضبط الراديو بوتون ليكون على اليمين */
-    div[role="radiogroup"] { align-items: flex-start; direction: rtl; }
+    /* ضبط الراديو بوتون ليكون على اليمين تماماً */
+    .stRadio { direction: rtl !important; }
+    div[role="radiogroup"] { align-items: flex-start !important; width: 100%; }
+    
+    /* إجبار الأزرار العادية (مثل زر رفع ملف) على التوجه لليمين */
+    .stButton > button {
+        margin-left: auto !important;
+        margin-right: 0 !important;
+        display: block !important;
+    }
     
     /* ضبط الخلايا داخل الجداول لتكون نصوصها يمين */
     [data-testid="stDataFrame"] div[role="gridcell"], 
@@ -26,7 +34,7 @@ st.markdown(
     /* زرار التحميل */
     .stDownloadButton { display: flex; justify-content: flex-end; }
 
-    /* توسيط العنوان الرئيسي */
+    /* حماية العنوان الرئيسي ليبقى في المنتصف */
     h1 {
         text-align: center !important;
         width: 100% !important;
@@ -38,29 +46,33 @@ st.markdown(
 )
 
 # --- تنسيق الهيدر (الشعارات والعنوان) ---
+# تقسيم الشاشة لـ 3 أجزاء: يسار (1)، منتصف (3)، يمين (1)
 col_left, col_space, col_right = st.columns([1, 3, 1])
 
-# 1. شعار الكلية (أعلى اليمين)
-if os.path.exists("logo_faculty.jpg"):
-    col_right.image("logo_faculty.jpg", use_container_width=True)
-elif os.path.exists("logo_faculty.png"):
-    col_right.image("logo_faculty.png", use_container_width=True)
+with col_right:
+    # 1. شعار الكلية (أعلى اليمين)
+    if os.path.exists("logo_faculty.jpg"):
+        st.image("logo_faculty.jpg", use_container_width=True)
+    elif os.path.exists("logo_faculty.png"):
+        st.image("logo_faculty.png", use_container_width=True)
 
-# العنوان في النص
-st.markdown(
-    """
-    <div style='text-align: center; margin-top: -50px; margin-bottom: 30px;'>
-        <h1 style='color: #1E3A8A; font-family: Arial, sans-serif;'>توزيع كراسات الإجابة (الشجرة)</h1>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+with col_space:
+    # العنوان في النص (داخل العمود الأوسط)
+    st.markdown(
+        """
+        <div style='display: flex; justify-content: center; align-items: center; height: 100%; margin-top: 20px;'>
+            <h1 style='color: #1E3A8A; font-family: Arial, sans-serif; margin: 0;'>توزيع كراسات الإجابة (الشجرة)</h1>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-# 2. شعار الوحدة (أعلى اليسار)
-if os.path.exists("logo_unit.jpg"):
-    col_left.image("logo_unit.jpg", use_container_width=True)
-elif os.path.exists("logo_unit.png"):
-    col_left.image("logo_unit.png", use_container_width=True)
+with col_left:
+    # 2. شعار الوحدة (أعلى اليسار)
+    if os.path.exists("logo_unit.jpg"):
+        st.image("logo_unit.jpg", use_container_width=True)
+    elif os.path.exists("logo_unit.png"):
+        st.image("logo_unit.png", use_container_width=True)
 
 st.markdown("---")
 
@@ -176,39 +188,3 @@ if st.session_state.base_df is not None:
                 
                 total_attendance = pd.to_numeric(result_df['عدد الحضور'], errors='coerce').fillna(0).sum()
                 total_row = pd.DataFrame({'رقم اللجنة': ['الإجمالي'], 'مكان اللجنة': [''], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
-                result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
-                
-                # --- التعديل هنا: الترتيب ده بيخلي "رقم اللجنة" أقصى اليمين في جدول المخرجات ---
-                display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
-                result_df_display = result_df_with_total[display_cols]
-                
-                st.markdown(f"<div dir='rtl' style='text-align: right; color: green; font-weight: bold; margin-bottom: 10px;'>تم الحساب بنجاح! إجمالي عدد الحضور: {int(total_attendance)} طالب</div>", unsafe_allow_html=True)
-                
-                output_table_height = (len(result_df_display) + 1) * 38
-                styled_output = result_df_display.style.set_properties(**{'text-align': 'right'})
-                st.dataframe(styled_output, hide_index=True, use_container_width=True, height=output_table_height)
-                
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    # ترتيب ملف الإكسيل عشان يفتح طبيعي (أ، ب، ج)
-                    excel_cols = ['رقم اللجنة', 'مكان اللجنة', 'عدد الحضور', col_name]
-                    result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة')
-                    writer.sheets['الشجرة'].sheet_view.rightToLeft = True
-                
-                st.markdown("<div dir='rtl' style='text-align: right;'>", unsafe_allow_html=True)
-                st.download_button(
-                    label="📥 تحميل النتيجة في ملف إكسيل",
-                    data=output.getvalue(),
-                    file_name="توزيع_كراسات_الإجابة.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    type="primary"
-                )
-                st.markdown("</div>", unsafe_allow_html=True)
-                
-                # النصيحة تحت زر التحميل
-                st.markdown(
-                    "<p dir='rtl' style='text-align: right; color: gray; margin-top: 10px; font-size: 14px;'>"
-                    "💡 نصيحة: للطباعة كـ PDF، قم بفتح ملف الإكسيل الذي تم تحميله، ثم اضغط (Ctrl+P) واختر Save as PDF"
-                    "</p>", 
-                    unsafe_allow_html=True
-                )
