@@ -217,7 +217,19 @@ if st.session_state.base_df is not None:
                 worksheet.column_dimensions['D'].width = 30
             
             st.markdown("<div style='display: flex; justify-content: flex-end; width: 100%;'>", unsafe_allow_html=True)
-            st.download_button("📥 تحميل النتيجة في ملف إكسيل", output.getvalue(), "توزيع_الشجرة.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
+            
+            # التسمية الديناميكية لملف الإكسيل
+            safe_course = course_name.strip() if course_name.strip() else "بدون_مقرر"
+            safe_control = control_name.strip() if control_name.strip() else "بدون_كنترول"
+            dynamic_file_name = f"توزيع الشجرة_{safe_course}_{safe_control}.xlsx"
+            
+            st.download_button(
+                label="📥 تحميل النتيجة في ملف إكسيل", 
+                data=output.getvalue(), 
+                file_name=dynamic_file_name, 
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                type="primary"
+            )
             st.markdown("</div>", unsafe_allow_html=True)
             st.markdown("<p dir='rtl' style='text-align: right; color: gray; margin-top: 10px; font-size: 14px;'>💡 نصيحة: للطباعة كـ PDF، قم بفتح ملف الإكسيل الذي تم تحميله، ثم اضغط (Ctrl+P) واختر Save as PDF</p>", unsafe_allow_html=True)
 
