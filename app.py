@@ -12,7 +12,7 @@ st.markdown(
     <style>
     /* محاذاة العناوين والنصوص لليمين */
     .stMarkdown, .stText { text-align: right; direction: rtl; }
-    /* التعديل السحري: إجبار كل خلايا الجدول والأرقام على المحاذاة لليمين */
+    /* التعديل: إجبار كل خلايا الجدول والأرقام على المحاذاة لليمين */
     [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th { 
         text-align: right !important; 
         direction: rtl !important; 
@@ -38,7 +38,7 @@ elif os.path.exists("logo_faculty.png"):
 st.markdown(
     """
     <div style='text-align: center; margin-top: -50px; margin-bottom: 30px;'>
-        <h1 style='color: #1E3A8A; font-family: Arial, sans-serif;'>برنامج توزيع كراسات الإجابة (الشجرة)</h1>
+        <h1 style='color: #1E3A8A; font-family: Arial, sans-serif;'>توزيع كراسات الإجابة (الشجرة)</h1>
     </div>
     """,
     unsafe_allow_html=True
@@ -54,7 +54,13 @@ if 'base_df' not in st.session_state:
     st.session_state.base_df = None
 
 if st.session_state.base_df is None:
-    st.info("يرجى رفع ملف الإكسيل الأساسي (يحتوي على: رقم اللجنة، مكان اللجنة)")
+    # رسالة التنبيه تم تعديلها لتكون على اليمين بشكل صريح
+    st.markdown(
+        "<div dir='rtl' style='text-align: right; background-color: #e8f4f8; padding: 15px; border-radius: 5px; color: #004d40; border: 1px solid #b6e3f4; margin-bottom: 15px;'>"
+        "ℹ️ <strong>ملاحظة:</strong> يرجى رفع ملف الإكسيل الأساسي (يحتوي على: رقم اللجنة، مكان اللجنة)"
+        "</div>", 
+        unsafe_allow_html=True
+    )
     uploaded_file = st.file_uploader("اختر ملف الإكسيل", type=['xlsx'])
     
     if uploaded_file is not None:
@@ -87,7 +93,7 @@ if st.session_state.base_df is not None:
         st.markdown("<h3 dir='rtl' style='text-align: right;'>إدخال أعداد الحضور</h3>", unsafe_allow_html=True)
         st.markdown("<p dir='rtl' style='text-align: right; color: gray;'>نصيحة: للطباعة كـ PDF، قم بتحميل ملف الإكسيل وافتحه، ثم اضغط (Ctrl+P) واختر Save as PDF</p>", unsafe_allow_html=True)
         
-        # ترتيب الأعمدة للعرض فقط (رقم اللجنة أقصى اليمين)
+        # ترتيب الأعمدة للعرض فقط 
         input_display_cols = ['عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
         df_for_editor = st.session_state.base_df[input_display_cols]
         
@@ -157,7 +163,7 @@ if st.session_state.base_df is not None:
                 total_row = pd.DataFrame({'رقم اللجنة': ['الإجمالي'], 'مكان اللجنة': [''], 'عدد الحضور': [int(total_attendance)], col_name: ['']})
                 result_df_with_total = pd.concat([result_df, total_row], ignore_index=True)
                 
-                # ترتيب الأعمدة للعرض على الشاشة (رقم اللجنة أقصى اليمين)
+                # ترتيب الأعمدة للعرض على الشاشة
                 display_cols = [col_name, 'عدد الحضور', 'مكان اللجنة', 'رقم اللجنة']
                 result_df_display = result_df_with_total[display_cols]
                 
@@ -176,7 +182,7 @@ if st.session_state.base_df is not None:
                     result_df_with_total[excel_cols].to_excel(writer, index=False, sheet_name='الشجرة')
                     writer.sheets['الشجرة'].sheet_view.rightToLeft = True
                 
-                # زرار التحميل متقسم لسطور قصيرة عشان ما يتقطعش
+                # زرار التحميل
                 st.download_button(
                     label="📥 تحميل النتيجة في ملف إكسيل",
                     data=output.getvalue(),
